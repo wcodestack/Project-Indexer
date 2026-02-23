@@ -8,11 +8,18 @@ export class IndexerService implements OnModuleInit {
 
   constructor(private readonly configService: ConfigService) {}
 
-  onModuleInit() {
+  async onModuleInit() {
     const rpcUrl = this.configService.get<string>('RPC_URL');
     if (!rpcUrl) {
       throw new Error('RPC_URL not configured');
     }
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    
+    try {
+      const blockNumber = await this.provider.getBlockNumber();
+      console.log(`Connected to blockchain. Current block: ${blockNumber}`);
+    } catch (error) {
+      console.log('Failed to connect to blockchain', error);
+    }
   }
 }
