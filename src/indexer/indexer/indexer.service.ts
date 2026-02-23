@@ -46,9 +46,11 @@ export class IndexerService implements OnModuleInit {
     };
     this.provider.on(filter, (log) => {
       const parsedLog = iface.parseLog(log);
-      console.log(
-        `Transfer detected: ${parsedLog.args.from} -> ${parsedLog.args.to} : ${parsedLog.args.value.toString()}`
-      );
+      if (parsedLog) {
+        console.log(
+          `Transfer detected: ${parsedLog.args.from} -> ${parsedLog.args.to} : ${parsedLog.args.value.toString()}`
+        );
+      }
     });
   }
 }
