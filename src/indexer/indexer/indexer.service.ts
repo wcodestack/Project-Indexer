@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
+import { CONTRACT_ABI } from './abi/contract.abi';
 
 @Injectable()
 export class IndexerService implements OnModuleInit {
@@ -36,20 +37,19 @@ export class IndexerService implements OnModuleInit {
   }
 
   private startContractListener(): void {
-    const iface = new ethers.Interface([
-      'event Transfer(address indexed from, address indexed to, uint256 value)'
-    ]);
-    const transferTopic = ethers.id('Transfer(address,address,uint256)');
+    const iface = new ethers.Interface(CONTRACT_ABI);
     const filter = {
       address: this.configService.get<string>('CONTRACT_ADDRESS'),
-      topics: [transferTopic],
     };
     this.provider.on(filter, (log) => {
-      const parsedLog = iface.parseLog(log);
-      if (parsedLog) {
+      try {
+        const parsedLog = iface.parseLog(log);
         console.log(
-          `Transfer detected: ${parsedLog.args.from} -> ${parsedLog.args.to} : ${parsedLog.args.value.toString()}`
+          `Event detected: ${parsedLog.name}`,
+          parsedLog.args
         );
+      } catch (err) {
+        console.log('Unknown log format', log);
       }
     });
   }
