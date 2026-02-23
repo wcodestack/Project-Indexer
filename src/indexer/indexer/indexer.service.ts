@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 
 @Injectable()
 export class IndexerService implements OnModuleInit {
-  private provider: ethers.JsonRpcProvider;
+  private provider: ethers.WebSocketProvider;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -13,7 +13,7 @@ export class IndexerService implements OnModuleInit {
     if (!rpcUrl) {
       throw new Error('RPC_URL not configured');
     }
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.provider = new ethers.WebSocketProvider(rpcUrl);
     
     try {
       const blockNumber = await this.provider.getBlockNumber();
