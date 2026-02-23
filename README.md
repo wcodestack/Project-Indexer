@@ -69,7 +69,7 @@ Create a `.env` file with the following variables:
 
 ```env
 # Ethereum Node Configuration
-RPC_URL=ws://localhost:8545
+RPC_URL=<your Ethereum RPC URL>
 
 # Smart Contract Configuration
 CONTRACT_ADDRESS=0xYourContractAddressHere
