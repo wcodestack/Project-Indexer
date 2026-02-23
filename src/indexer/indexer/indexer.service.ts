@@ -18,8 +18,19 @@ export class IndexerService implements OnModuleInit {
     try {
       const blockNumber = await this.provider.getBlockNumber();
       console.log(`Connected to blockchain. Current block: ${blockNumber}`);
+      this.startBlockListener();
     } catch (error) {
       console.log('Failed to connect to blockchain', error);
     }
+  }
+
+  private startBlockListener(): void {
+    this.provider.on('block', (blockNumber: number) => {
+      console.log(`New block received: ${blockNumber}`);
+    });
+
+    this.provider.on('error', (error: Error) => {
+      console.log('Provider error:', error);
+    });
   }
 }
