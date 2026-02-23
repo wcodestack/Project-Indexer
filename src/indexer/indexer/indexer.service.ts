@@ -36,13 +36,19 @@ export class IndexerService implements OnModuleInit {
   }
 
   private startContractListener(): void {
+    const iface = new ethers.Interface([
+      'event Transfer(address indexed from, address indexed to, uint256 value)'
+    ]);
     const transferTopic = ethers.id('Transfer(address,address,uint256)');
     const filter = {
       address: this.configService.get<string>('CONTRACT_ADDRESS'),
       topics: [transferTopic],
     };
     this.provider.on(filter, (log) => {
-      console.log('Raw log received:', log);
+      const parsedLog = iface.parseLog(log);
+      console.log(
+        `Transfer detected: ${parsedLog.args.from} -> ${parsedLog.args.to} : ${parsedLog.args.value.toString()}`
+      );
     });
   }
 }
