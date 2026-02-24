@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   postgres:
     image: postgres:15
@@ -12,13 +11,19 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   indexer:
     build: .
     container_name: relayer-indexer
     restart: always
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
     ports:

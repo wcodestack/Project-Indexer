@@ -1,52 +1,65 @@
-# Relayer Project - Blockchain Indexer
+# Blockchain Indexer
 
 A production-ready blockchain indexer service built with NestJS that monitors Ethereum blockchain events and smart contract interactions in real-time.
 
-## Project Description
+## Overview
 
 This project is a blockchain indexer service that connects to an Ethereum node via WebSocket, listens for new blocks, and monitors specific smart contract events. It's designed to be a foundation for building decentralized applications that need to track blockchain activity in real-time.
 
+### What it does
+- Connects to Ethereum blockchain via WebSocket RPC
+- Listens for new blocks in real-time
+- Monitors smart contract events
+- Stores event data in PostgreSQL database
+- Provides a foundation for dApp development
+
+### What blockchain it connects to
+- Ethereum mainnet or testnets (Rinkeby, Ropsten, etc.)
+- Requires WebSocket RPC endpoint
+
+### What events it listens to
+- All events emitted by the configured smart contract
+- Block number tracking
+- Transaction hash logging
+
+### How it stores data in PostgreSQL
+- Event name and contract address
+- Block number and transaction hash
+- Event arguments as JSON
+- Timestamps for each event
+
 ## Tech Stack
 
-- **Framework**: NestJS (Node.js)
-- **Language**: TypeScript
-- **Blockchain Library**: ethers.js
-- **Configuration**: @nestjs/config
-- **Testing**: Jest
-- **Code Quality**: ESLint, Prettier
+- **Node.js** - JavaScript runtime
+- **NestJS** - Progressive Node.js framework
+- **Prisma** - Next-generation ORM
+- **PostgreSQL** - Relational database
+- **Docker** - Containerization
+- **WebSocket RPC** - Real-time blockchain connection
 
-## Features
+## Environment Variables
 
-- Real-time blockchain event monitoring via WebSocket
-- Smart contract event indexing
-- Block number tracking
-- Error handling and logging
-- Modular architecture
-- TypeScript with strict typing
-- Environment-based configuration
-- Comprehensive testing setup
+Create a `.env` file with the following variables:
 
-## Project Architecture
+```env
+# Database Configuration
+DATABASE_URL="postgresql://<username>:<password>@<host>:<port>/<database_name>"
 
-```
-relayer-project/
-├── src/
-│   ├── indexer/                    # Core indexing functionality
-│   │   ├── indexer/
-│   │   │   └── indexer.service.ts   # Main indexing service
-│   │   ├── contract.abi.ts        # Smart contract ABI definition
-│   │   └── indexer.module.ts      # NestJS module
-│   ├── app.controller.ts           # REST API endpoints
-│   ├── app.service.ts              # Business logic
-│   └── app.module.ts               # Main application module
-├── dist/                           # Compiled JavaScript
-├── test/                          # Test files
-├── .env.example                   # Environment variables template
-└── package.json                   # Dependencies and scripts
+# Ethereum Node Configuration
+RPC_URL="wss://<your-websocket-rpc-url>" # Must be a WebSocket (wss://) RPC endpoint.
+
+# Smart Contract Configuration
+CONTRACT_ADDRESS="<deployed_contract_address>" # Must be the deployed smart contract address.
 ```
 
-## Installation
+## Local Development Setup
 
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 15+
+- Prisma CLI
+
+### Installation
 1. Clone the repository:
 ```bash
 git clone <repository-url>
@@ -58,60 +71,105 @@ cd relayer-project
 npm install
 ```
 
-3. Copy environment variables:
+3. Set up environment variables:
 ```bash
 cp .env.example .env
+# Edit .env with your configuration
 ```
 
-## Environment Variables
-
-Create a `.env` file with the following variables:
-
-```env
-# Ethereum Node Configuration
-RPC_URL=<your Ethereum RPC URL>
-
-# Smart Contract Configuration
-CONTRACT_ADDRESS=0xYourContractAddressHere
+4. Set up database:
+```bash
+npx prisma migrate dev
+npx prisma generate
 ```
 
-## How to Run
-
-### Development
+5. Start the application:
 ```bash
 npm run start:dev
 ```
 
-### Production
+## Docker Setup
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Running with Docker Compose
 ```bash
-npm run build
-npm run start:prod
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f indexer
+
+# Stop services
+docker-compose down
 ```
 
-### Testing
-```bash
-# Run all tests
-npm test
+### Docker Services
+- **postgres**: PostgreSQL 15 database
+- **indexer**: Relayer indexer service
 
-# Run tests in watch mode
-npm run test:watch
+## Project Structure
 
-# Run with coverage
-npm run test:cov
-
-# Run end-to-end tests
-npm run test:e2e
 ```
+relayer-project/
+├── src/
+│   ├── indexer/                    # Core indexing functionality
+│   │   ├── indexer/
+│   │   │   └── indexer.service.ts   # Main indexing service
+│   │   ├── contract.abi.ts        # Smart contract ABI definition
+│   │   └── indexer.module.ts      # NestJS module
+│   ├── database/
+│   │   └── prisma.service.ts      # Prisma database service
+│   └── app.module.ts               # Main application module
+├── prisma/
+│   └── schema.prisma               # Database schema
+├── dist/                           # Compiled JavaScript
+├── Dockerfile                      # Container configuration
+├── docker-compose.yml              # Multi-service setup
+├── .env.example                    # Environment variables template
+├── package.json                    # Dependencies and scripts
+└── README.md                       # This file
+```
+
+## How It Works Internally
+
+### 1. Initialization
+- Reads environment variables for database and blockchain configuration
+- Establishes WebSocket connection to Ethereum node
+- Validates required configuration
+
+### 2. Block Listening
+- Subscribes to new block events via WebSocket
+- Logs block numbers as they arrive
+- Handles connection errors and reconnects
+
+### 3. Contract Event Listening
+- Sets up filter for specified smart contract address
+- Listens for all events emitted by the contract
+- Parses raw logs into structured data
+
+### 4. Data Processing
+- Converts BigInt values to strings for JSON serialization
+- Formats event arguments into readable structure
+- Logs event details for debugging
+
+### 5. Database Storage
+- Creates new Event records in PostgreSQL
+- Stores event name, contract address, block number, and transaction hash
+- Saves event arguments as JSON
+- Handles database errors gracefully
 
 ## Example Output
 
 The indexer will output logs like:
 
-```
-Connected to blockchain. Current block: 15234567
-New block received: 15234568
-Event detected: Transfer { from: '0x123...', to: '0x456...', value: '1000' }
-Event detected: Approval { owner: '0x123...', spender: '0x789...', value: '5000' }
+```Connected to blockchain. Current block: 15234567
+ New block received: 15234568
+ Listening for events on contract: 0xYourContractAddressHere
+ Event detected: Transfer { from: '0x123...', to: '0x456...', value: '1000' }
+ Event detected: Approval { owner: '0x123...', spender: '0x789...', value: '5000' }
 ```
 
 ## License
