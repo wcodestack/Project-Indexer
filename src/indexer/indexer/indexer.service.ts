@@ -2,12 +2,16 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { CONTRACT_ABI } from '../contract.abi';
+import { PrismaService } from  'src/database/prisma.service';
 
 @Injectable()
 export class IndexerService implements OnModuleInit {
   private provider: ethers.WebSocketProvider;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async onModuleInit() {
     const rpcUrl = this.configService.get<string>('RPC_URL');
@@ -44,6 +48,25 @@ export class IndexerService implements OnModuleInit {
     });
   }
 
+  private async saveEvent(parsedLog: any, log: any): Promise<void> {
+    try {
+      const safeArgs = JSON.parse(JSON.stringify(parsedLog.args, (_, value) => typeof value === 'bigint' ? value.toString() : value));
+      
+      await this.prismaService.event.create({
+        data: {
+          eventName: parsedLog.name,
+          contractAddress: log.address,
+          blockNumber: log.blockNumber,
+          transactionHash: log.transactionHash,
+          args: JSON.stringify(safeArgs),
+        },
+      });
+      console.log('📝 Event saved to database');
+    } catch (error) {
+      console.error('❌ Failed to save event to database:', error);
+    }
+  }
+
   private startContractListener(contractAddress: string): void {
     const iface = new ethers.Interface(CONTRACT_ABI);
 
@@ -53,7 +76,7 @@ export class IndexerService implements OnModuleInit {
 
     console.log(`👂 Listening for events on contract: ${contractAddress}`);
 
-    this.provider.on(filter, (log) => {
+    this.provider.on(filter, async (log) => {
       try {
         const parsedLog = iface.parseLog(log);
 
@@ -75,6 +98,8 @@ export class IndexerService implements OnModuleInit {
           blockNumber: log.blockNumber,
           transactionHash: log.transactionHash,
         });
+
+        await this.saveEvent(parsedLog, log);
       } catch (error) {
         console.error('Error parsing log:', error);
       }
